@@ -1,0 +1,45 @@
+{
+  "name": "osu-stable-db",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "TypeScript reader and writer for osu!stable database files.",
+  "author": "zzzzv",
+  "license": "MIT",
+  "sideEffects": false,
+  "homepage": "https://github.com/zzzzv/osu-stable-db#readme",
+  "bugs": {
+    "url": "https://github.com/zzzzv/osu-stable-db/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zzzzv/osu-stable-db.git"
+  },
+  "keywords": [
+    "osu",
+    "osu-stable"
+  ],
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./node": "./dist/node.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "local:inspect": "pnpm run build && node scripts/local-inspect.mjs",
+    "local:roundtrip": "pnpm run build && node scripts/local-roundtrip.mjs",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@typescript/native-preview": "7.0.0-dev.20260328.1",
+    "tsdown": "^0.21.7",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}
