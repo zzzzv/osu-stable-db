@@ -2,6 +2,8 @@
 
 TypeScript reader and writer for osu!stable database files.
 
+This project is implemented entirely according to the official osu! wiki page for stable database files: [Legacy database file structure](https://github.com/ppy/osu/wiki/Legacy-database-file-structure).
+
 This library currently supports the latest database structure from version 20250107 onward for:
 
 - osu!.db
