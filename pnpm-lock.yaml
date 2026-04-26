@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      osu-binary:
+        specifier: ^0.1.0
+        version: 0.1.0
     devDependencies:
       '@types/node':
         specifier: ^25.5.0
@@ -542,6 +546,9 @@ packages:
 
   obug@2.1.1:
     resolution: {integrity: sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ==}
+
+  osu-binary@0.1.0:
+    resolution: {integrity: sha512-xsxnV29DN/DkoAlG383rJwAlkyfBaH/U7iRLtm0gVp8JEeduU4stqC+LcgfhbSb6uHH/h2X8UTLcPM4iJy6EZg==}
 
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
@@ -1150,6 +1157,8 @@ snapshots:
   nanoid@3.3.11: {}
 
   obug@2.1.1: {}
+
+  osu-binary@0.1.0: {}
 
   pathe@2.0.3: {}
 
