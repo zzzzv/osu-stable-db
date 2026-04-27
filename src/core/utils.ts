@@ -2,6 +2,7 @@ import { Mods, type DateTimeTicks, type Mod, type ModFlags } from '../types'
 
 export const TICKS_PER_MILLISECOND = 10_000n
 export const UNIX_EPOCH_DATE_TIME_TICKS = 621_355_968_000_000_000n
+export const WINDOWS_FILE_TIME_EPOCH_DATE_TIME_TICKS = 504_911_232_000_000_000n
 
 const orderedMods = Object.values(Mods).filter((value) => value !== Mods.None)
 
@@ -17,6 +18,16 @@ export function dateTimeTicksToUnixMilliseconds(ticks: DateTimeTicks): bigint {
  */
 export function unixMillisecondsToDateTimeTicks(milliseconds: bigint): DateTimeTicks {
 	return milliseconds * TICKS_PER_MILLISECOND + UNIX_EPOCH_DATE_TIME_TICKS
+}
+
+/**
+ * Converts .NET DateTime ticks to Windows FILETIME ticks.
+ *
+ * scores.db stores replay timestamps as .NET DateTime ticks, while replay
+ * filenames under Data/r use FILETIME ticks starting at 1601-01-01.
+ */
+export function dateTimeTicksToWindowsFileTimeTicks(ticks: DateTimeTicks): bigint {
+	return ticks - WINDOWS_FILE_TIME_EPOCH_DATE_TIME_TICKS
 }
 
 /**

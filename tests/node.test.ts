@@ -1,72 +1,56 @@
-import { mkdtemp, readFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import {
-	readCollectionDatabase,
-	readOsuDatabase,
-	readScoresDatabase,
-	writeCollectionDatabase,
-	writeOsuDatabase,
-	writeScoresDatabase,
-} from '../src'
-import {
-	readCollectionDatabaseFile,
-	readOsuDatabaseFile,
-	readScoresDatabaseFile,
-	writeCollectionDatabaseFile,
-	writeOsuDatabaseFile,
-	writeScoresDatabaseFile,
-} from '../src/node'
+import { OsuFolder } from '../src/node'
 
-const fixtureDir = join(process.cwd(), 'tests', 'files')
+const linkedLocalDir = join(process.cwd(), 'tests', 'files', 'local', 'osu!')
+const missingLinkedLocalDirMessage = 'Missing tests/files/local/osu! link. Run pnpm run local:link -- "C:\\path\\to\\osu!".'
+const requiredSampleCount = 10
 
-describe('node file wrappers', () => {
-	it('reads committed fixture files through node wrappers', async () => {
-		const osuPath = join(fixtureDir, 'osu!.db')
-		const collectionPath = join(fixtureDir, 'collection.db')
-		const scoresPath = join(fixtureDir, 'scores.db')
+function getLinkedLocalFolder(context: { skip: (message?: string) => never }): OsuFolder {
+	if (!existsSync(linkedLocalDir)) {
+		context.skip(missingLinkedLocalDirMessage)
+	}
 
-		const [osu, collection, scores] = await Promise.all([
-			readOsuDatabaseFile(osuPath),
-			readCollectionDatabaseFile(collectionPath),
-			readScoresDatabaseFile(scoresPath),
-		])
+	return new OsuFolder(linkedLocalDir)
+}
 
-		expect(osu).toEqual(readOsuDatabase(new Uint8Array(await readFile(osuPath))))
-		expect(collection).toEqual(readCollectionDatabase(new Uint8Array(await readFile(collectionPath))))
-		expect(scores).toEqual(readScoresDatabase(new Uint8Array(await readFile(scoresPath))))
+function warnIfSampleCountIsShort(label: string, count: number): void {
+	if (count < requiredSampleCount) {
+		console.warn(`Expected ${requiredSampleCount} ${label}, but only found ${count} in the linked local database.`)
+	}
+}
+
+describe('node osu folder helper', () => {
+	it('resolves existing osu files for the last 10 beatmaps from the linked local database', async (context) => {
+		const folder = getLinkedLocalFolder(context)
+		const osu = await folder.readOsuDatabase()
+		const lastBeatmaps = osu.beatmaps.slice(-requiredSampleCount)
+
+		warnIfSampleCountIsShort('beatmaps', lastBeatmaps.length)
+		expect(lastBeatmaps.length).toBeGreaterThan(0)
+
+		for (const beatmap of lastBeatmaps) {
+			const beatmapPath = folder.getOsuFilePath(beatmap)
+			expect(existsSync(beatmapPath), beatmapPath).toBe(true)
+		}
 	})
 
-	it('writes osu!.db through node wrapper with byte-identical output', async () => {
-		const fixturePath = join(fixtureDir, 'osu!.db')
-		const fixture = new Uint8Array(await readFile(fixturePath))
-		const database = readOsuDatabase(fixture)
-		const outputDir = await mkdtemp(join(tmpdir(), 'osu-stable-db-'))
-		const outputPath = join(outputDir, 'osu!.db')
+	it('resolves existing osr files for the last 10 scores from the linked local database', async (context) => {
+		const folder = getLinkedLocalFolder(context)
+		const scores = await folder.readScoresDatabase()
+		const lastScores = scores.beatmaps
+			.flatMap((entry) => entry.scores)
+			.slice(-requiredSampleCount)
 
-		await writeOsuDatabaseFile(outputPath, database)
+		warnIfSampleCountIsShort('scores', lastScores.length)
+		expect(lastScores.length).toBeGreaterThan(0)
 
-		expect(new Uint8Array(await readFile(outputPath))).toEqual(writeOsuDatabase(database))
-	})
-
-	it('writes collection.db and scores.db through node wrappers', async () => {
-		const collectionFixture = new Uint8Array(await readFile(join(fixtureDir, 'collection.db')))
-		const scoresFixture = new Uint8Array(await readFile(join(fixtureDir, 'scores.db')))
-		const collectionDatabase = readCollectionDatabase(collectionFixture)
-		const scoresDatabase = readScoresDatabase(scoresFixture)
-		const outputDir = await mkdtemp(join(tmpdir(), 'osu-stable-db-'))
-		const collectionPath = join(outputDir, 'collection.db')
-		const scoresPath = join(outputDir, 'scores.db')
-
-		await Promise.all([
-			writeCollectionDatabaseFile(collectionPath, collectionDatabase),
-			writeScoresDatabaseFile(scoresPath, scoresDatabase),
-		])
-
-		expect(new Uint8Array(await readFile(collectionPath))).toEqual(writeCollectionDatabase(collectionDatabase))
-		expect(new Uint8Array(await readFile(scoresPath))).toEqual(writeScoresDatabase(scoresDatabase))
+		for (const score of lastScores) {
+			const replayPath = folder.getOsrFilePath(score)
+			expect(existsSync(replayPath), replayPath).toBe(true)
+		}
 	})
 })

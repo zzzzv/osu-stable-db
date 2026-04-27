@@ -23,6 +23,17 @@ import {
 
 const fixtureDir = join(process.cwd(), 'tests', 'files')
 const localFixtureDir = join(fixtureDir, 'local')
+const linkedLocalFixtureDir = join(localFixtureDir, 'osu!')
+
+function resolveLocalFixturePath(fileName: string): string {
+	const linkedPath = join(linkedLocalFixtureDir, fileName)
+	if (existsSync(linkedPath)) {
+		return linkedPath
+	}
+
+	return join(localFixtureDir, fileName)
+}
+
 function areBytesEqual(left: Uint8Array, right: Uint8Array): boolean {
 	if (left.byteLength !== right.byteLength) {
 		return false
@@ -263,7 +274,7 @@ describe('database IO', () => {
 	})
 
 	it('parses and round-trips local osu!.db fixture when present', async () => {
-		const filePath = join(localFixtureDir, 'osu!.db')
+		const filePath = resolveLocalFixturePath('osu!.db')
 		if (!existsSync(filePath)) {
 			return
 		}
@@ -277,7 +288,7 @@ describe('database IO', () => {
 	})
 
 	it('parses and round-trips local collection.db fixture when present', async () => {
-		const filePath = join(localFixtureDir, 'collection.db')
+		const filePath = resolveLocalFixturePath('collection.db')
 		if (!existsSync(filePath)) {
 			return
 		}
@@ -291,7 +302,7 @@ describe('database IO', () => {
 	})
 
 	it('parses and round-trips local scores.db fixture when present', async () => {
-		const filePath = join(localFixtureDir, 'scores.db')
+		const filePath = resolveLocalFixturePath('scores.db')
 		if (!existsSync(filePath)) {
 			return
 		}

@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
@@ -9,10 +10,20 @@ import {
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const localDir = resolve(workspaceRoot, 'tests/files/local')
+const linkedLocalDir = resolve(localDir, 'osu!')
 const reportDir = resolve(localDir, 'reports')
 const defaultBeatmapId = 5288868
 const TICKS_PER_MILLISECOND = 10000n
 const UNIX_EPOCH_DATE_TIME_TICKS = 621355968000000000n
+
+function resolveLocalDatabasePath(fileName) {
+	const linkedPath = resolve(linkedLocalDir, fileName)
+	if (existsSync(linkedPath)) {
+		return linkedPath
+	}
+
+	return resolve(localDir, fileName)
+}
 
 function parseBeatmapId(argument) {
 	if (argument === undefined) {
@@ -40,8 +51,8 @@ function toJson(value) {
 
 const targetBeatmapId = parseBeatmapId(process.argv[2])
 
-const osuDatabase = await readOsuDatabaseFile(resolve(localDir, 'osu!.db'))
-const scoresDatabase = await readScoresDatabaseFile(resolve(localDir, 'scores.db'))
+const osuDatabase = await readOsuDatabaseFile(resolveLocalDatabasePath('osu!.db'))
+const scoresDatabase = await readScoresDatabaseFile(resolveLocalDatabasePath('scores.db'))
 const beatmapByBeatmapId = osuDatabase.beatmaps.find((entry) => entry.beatmapId === targetBeatmapId)
 const beatmapByDifficultyId = osuDatabase.beatmaps.find((entry) => entry.difficultyId === targetBeatmapId)
 const beatmap = beatmapByBeatmapId ?? beatmapByDifficultyId ?? null

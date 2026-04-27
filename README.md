@@ -10,7 +10,7 @@ This library currently supports the latest database structure from version 20250
 - collection.db
 - scores.db
 
-The core binary and database logic is browser-compatible. A separate Node-only subpath is provided for direct file reads and writes.
+The core binary and database logic is browser-compatible. A separate Node-only subpath is provided for direct file reads, writes, and osu! folder helpers.
 
 ## Scope
 
@@ -64,30 +64,32 @@ Main entry exports:
 
 ## Node Usage
 
-Use the Node subpath when you want direct file reads and writes through node:fs/promises.
+Use the Node subpath when you want to work with a full osu! folder or with direct file reads and writes through node:fs/promises.
 
 ```ts
 import {
-  readOsuDatabaseFile,
-  writeCollectionDatabaseFile,
+  OsuFolder,
 } from 'osu-stable-db/node'
 
-const osuDatabase = await readOsuDatabaseFile('path/to/osu!.db')
+const osuFolder = new OsuFolder('C:/Games/osu!')
+const osuDatabase = await osuFolder.readOsuDatabase()
+const scoresDatabase = await osuFolder.readScoresDatabase()
 
-await writeCollectionDatabaseFile(
-  'path/to/collection.db',
-  {
-    version: osuDatabase.version,
-    collections: [],
-  },
-)
+const newestBeatmap = osuDatabase.beatmaps.at(-1)
+const newestScore = scoresDatabase.beatmaps.at(-1)?.scores.at(-1)
+
+if (newestBeatmap !== undefined) {
+  const osuFilePath = osuFolder.getOsuFilePath(newestBeatmap)
+  console.log(osuFilePath)
+}
+
+if (newestScore !== undefined) {
+  const osrFilePath = osuFolder.getOsrFilePath(newestScore)
+  console.log(osrFilePath)
+}
 ```
 
-Node subpath exports:
-
-- readOsuDatabaseFile and writeOsuDatabaseFile
-- readCollectionDatabaseFile and writeCollectionDatabaseFile
-- readScoresDatabaseFile and writeScoresDatabaseFile
+If you only need path-based file IO, the same subpath also exports helpers such as readOsuDatabaseFile, writeCollectionDatabaseFile, and writeScoresDatabaseFile.
 
 ## Types And Time Values
 
@@ -107,11 +109,20 @@ Committed minimal fixtures live in [tests/files](tests/files).
 Large real-world local fixtures can be placed in:
 
 - [tests/files/local](tests/files/local)
+- [tests/files/local/osu!](tests/files/local/osu!) via a directory link created by the package script below
 
 That directory is git-ignored. When those files are present, the test suite will:
 
 - parse them
 - verify byte-for-byte round-trip for osu!.db, collection.db, and scores.db
+
+To link your real local osu! folder into the workspace on Windows, run:
+
+```bash
+pnpm run local:link -- "C:\\path\\to\\osu!"
+```
+
+This creates [tests/files/local/osu!](tests/files/local/osu!) as a directory junction. Tests and local scripts now prefer databases from that linked folder, and fall back to [tests/files/local](tests/files/local) for the previous workflow.
 
 You can also generate a local inspection report for a specific beatmap identifier with:
 
@@ -134,7 +145,7 @@ pnpm run build
 
 ## Notes On Validation
 
-Local validation also passes against private real-world database files in [tests/files/local](tests/files/local):
+Local validation also passes against private real-world database files in [tests/files/local/osu!](tests/files/local/osu!):
 
 - osu!.db: 58,295,932 bytes, 72,038 beatmaps
 - collection.db: 195,402 bytes, 11 collections, 5,743 stored beatmap references
