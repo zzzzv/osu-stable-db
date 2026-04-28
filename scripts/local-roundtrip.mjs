@@ -1,11 +1,9 @@
 import { mkdir } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import {
-	readCollectionDatabaseFile,
-	readOsuDatabaseFile,
-	readScoresDatabaseFile,
+	getConfiguredOsuFolder,
+	OSU_STABLE_DIR_ENV_VAR,
 	writeCollectionDatabaseFile,
 	writeOsuDatabaseFile,
 	writeScoresDatabaseFile,
@@ -13,27 +11,22 @@ import {
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const localDir = resolve(workspaceRoot, 'tests/files/local')
-const linkedLocalDir = resolve(localDir, 'osu!')
 const outputDir = resolve(localDir, 'output')
-
-function resolveLocalDatabasePath(fileName) {
-	const linkedPath = resolve(linkedLocalDir, fileName)
-	if (existsSync(linkedPath)) {
-		return linkedPath
-	}
-
-	return resolve(localDir, fileName)
-}
 
 await mkdir(outputDir, { recursive: true })
 
-const osuDatabase = await readOsuDatabaseFile(resolveLocalDatabasePath('osu!.db'))
+const osuFolder = getConfiguredOsuFolder()
+if (osuFolder === null) {
+	throw new Error(`Missing ${OSU_STABLE_DIR_ENV_VAR} in .env`)
+}
+
+const osuDatabase = await osuFolder.readOsuDatabase()
 await writeOsuDatabaseFile(resolve(outputDir, 'osu!.db'), osuDatabase)
 
-const collectionDatabase = await readCollectionDatabaseFile(resolveLocalDatabasePath('collection.db'))
+const collectionDatabase = await osuFolder.readCollectionDatabase()
 await writeCollectionDatabaseFile(resolve(outputDir, 'collection.db'), collectionDatabase)
 
-const scoresDatabase = await readScoresDatabaseFile(resolveLocalDatabasePath('scores.db'))
+const scoresDatabase = await osuFolder.readScoresDatabase()
 await writeScoresDatabaseFile(resolve(outputDir, 'scores.db'), scoresDatabase)
 
 console.log('Wrote round-tripped local databases to tests/files/local/output')

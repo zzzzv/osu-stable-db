@@ -13,6 +13,17 @@ import {
 } from './db'
 
 export type DatabaseFilePath = string | URL
+export const OSU_STABLE_DIR_ENV_VAR = 'OSU_STABLE_DIR'
+
+export function getConfiguredOsuFolderPath(): string | null {
+	const folderPath = process.env[OSU_STABLE_DIR_ENV_VAR]?.trim()
+	return folderPath === undefined || folderPath.length === 0 ? null : folderPath
+}
+
+export function getConfiguredOsuFolder(): OsuFolder | null {
+	const folderPath = getConfiguredOsuFolderPath()
+	return folderPath === null ? null : new OsuFolder(folderPath)
+}
 
 export async function readOsuDatabaseFile(path: DatabaseFilePath): Promise<OsuDatabase> {
 	return readOsuDatabase(new Uint8Array(await readFile(path)))

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { readFile } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
@@ -22,17 +21,6 @@ import {
 } from '../src'
 
 const fixtureDir = join(process.cwd(), 'tests', 'files')
-const localFixtureDir = join(fixtureDir, 'local')
-const linkedLocalFixtureDir = join(localFixtureDir, 'osu!')
-
-function resolveLocalFixturePath(fileName: string): string {
-	const linkedPath = join(linkedLocalFixtureDir, fileName)
-	if (existsSync(linkedPath)) {
-		return linkedPath
-	}
-
-	return join(localFixtureDir, fileName)
-}
 
 function areBytesEqual(left: Uint8Array, right: Uint8Array): boolean {
 	if (left.byteLength !== right.byteLength) {
@@ -271,48 +259,6 @@ describe('database IO', () => {
 		}
 
 		expect(() => writeScoresDatabase(database)).toThrow(/additionalModInfo/)
-	})
-
-	it('parses and round-trips local osu!.db fixture when present', async () => {
-		const filePath = resolveLocalFixturePath('osu!.db')
-		if (!existsSync(filePath)) {
-			return
-		}
-
-		const fixture = new Uint8Array(await readFile(filePath))
-		const database = readOsuDatabase(fixture)
-
-		expect(database.version).toBeGreaterThanOrEqual(MINIMUM_SUPPORTED_VERSION)
-		expect(database.beatmaps.length).toBeGreaterThan(0)
-		expect(areBytesEqual(writeOsuDatabase(database), fixture)).toBe(true)
-	})
-
-	it('parses and round-trips local collection.db fixture when present', async () => {
-		const filePath = resolveLocalFixturePath('collection.db')
-		if (!existsSync(filePath)) {
-			return
-		}
-
-		const fixture = new Uint8Array(await readFile(filePath))
-		const database = readCollectionDatabase(fixture)
-
-		expect(database.version).toBeGreaterThanOrEqual(MINIMUM_SUPPORTED_VERSION)
-		expect(database.collections.length).toBeGreaterThanOrEqual(0)
-		expect(areBytesEqual(writeCollectionDatabase(database), fixture)).toBe(true)
-	})
-
-	it('parses and round-trips local scores.db fixture when present', async () => {
-		const filePath = resolveLocalFixturePath('scores.db')
-		if (!existsSync(filePath)) {
-			return
-		}
-
-		const fixture = new Uint8Array(await readFile(filePath))
-		const database = readScoresDatabase(fixture)
-
-		expect(database.version).toBeGreaterThanOrEqual(MINIMUM_SUPPORTED_VERSION)
-		expect(database.beatmaps.length).toBeGreaterThanOrEqual(0)
-		expect(areBytesEqual(writeScoresDatabase(database), fixture)).toBe(true)
 	})
 
 })

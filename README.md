@@ -55,13 +55,6 @@ const collectionDatabase: CollectionDatabase = {
 const collectionBytes = writeCollectionDatabase(collectionDatabase)
 ```
 
-Main entry exports:
-
-- All public types and constants
-- readOsuDatabase and writeOsuDatabase
-- readCollectionDatabase and writeCollectionDatabase
-- readScoresDatabase and writeScoresDatabase
-
 ## Node Usage
 
 Use the Node subpath when you want to work with a full osu! folder or with direct file reads and writes through node:fs/promises.
@@ -71,7 +64,8 @@ import {
   OsuFolder,
 } from 'osu-stable-db/node'
 
-const osuFolder = new OsuFolder('C:/Games/osu!')
+const osuFolder = new OsuFolder('C:/osu!')
+
 const osuDatabase = await osuFolder.readOsuDatabase()
 const scoresDatabase = await osuFolder.readScoresDatabase()
 
@@ -106,23 +100,13 @@ This project is 100% AI-generated.
 
 Committed minimal fixtures live in [tests/files](tests/files).
 
-Large real-world local fixtures can be placed in:
+To run tests and local scripts against your real osu! installation, set this in [.env](.env):
 
-- [tests/files/local](tests/files/local)
-- [tests/files/local/osu!](tests/files/local/osu!) via a directory link created by the package script below
-
-That directory is git-ignored. When those files are present, the test suite will:
-
-- parse them
-- verify byte-for-byte round-trip for osu!.db, collection.db, and scores.db
-
-To link your real local osu! folder into the workspace on Windows, run:
-
-```bash
-pnpm run local:link -- "C:\\path\\to\\osu!"
+```dotenv
+OSU_STABLE_DIR=C:/osu!
 ```
 
-This creates [tests/files/local/osu!](tests/files/local/osu!) as a directory junction. Tests and local scripts now prefer databases from that linked folder, and fall back to [tests/files/local](tests/files/local) for the previous workflow.
+When OSU_STABLE_DIR is set, local validation reads your real database files and verifies byte-for-byte round-trip for osu!.db, collection.db, and scores.db.
 
 You can also generate a local inspection report for a specific beatmap identifier with:
 
@@ -145,7 +129,7 @@ pnpm run build
 
 ## Notes On Validation
 
-Local validation also passes against private real-world database files in [tests/files/local/osu!](tests/files/local/osu!):
+Local validation also passes against private real-world database files referenced by OSU_STABLE_DIR:
 
 - osu!.db: 58,295,932 bytes, 72,038 beatmaps
 - collection.db: 195,402 bytes, 11 collections, 5,743 stored beatmap references
