@@ -1,7 +1,7 @@
 {
   "name": "osu-stable-db",
   "type": "module",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "TypeScript reader and writer for osu!stable database files.",
   "author": "zzzzv",
   "license": "MIT",
@@ -30,7 +30,6 @@
     "build": "tsdown",
     "dev": "tsdown --watch",
     "local:inspect": "pnpm run build && node --env-file=.env scripts/local-inspect.mjs",
-    "local:roundtrip": "pnpm run build && node --env-file=.env scripts/local-roundtrip.mjs",
     "test": "node --env-file=.env ./node_modules/vitest/vitest.mjs",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm run build"

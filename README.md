@@ -100,13 +100,13 @@ This project is 100% AI-generated.
 
 Committed minimal fixtures live in [tests/files](tests/files).
 
-To run tests and local scripts against your real osu! installation, set this in [.env](.env):
+To run local node tests and the inspection script against your real osu! installation, set this in [.env](.env):
 
 ```dotenv
 OSU_STABLE_DIR=C:/osu!
 ```
 
-When OSU_STABLE_DIR is set, local validation reads your real database files and verifies byte-for-byte round-trip for osu!.db, collection.db, and scores.db.
+When OSU_STABLE_DIR is set, local node tests read your real database files and verify byte-for-byte round-trip for osu!.db, collection.db, and scores.db.
 
 You can also generate a local inspection report for a specific beatmap identifier with:
 
