@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { dateTimeTicksToWindowsFileTimeTicks } from './core/utils'
 import type { CollectionDatabase, OsuDatabase, ScoresDatabase, BeatmapEntry, ScoreEntry } from './types'
 import {
+	createBeatmapScoreQuery as createBaseBeatmapScoreQuery,
 	readCollectionDatabase,
 	readOsuDatabase,
 	readScoresDatabase,
@@ -90,6 +91,50 @@ export class OsuFolder {
 
 	async writeScoresDatabase(database: ScoresDatabase): Promise<void> {
 		await writeScoresDatabaseFile(this.getScoresDatabasePath(), database)
+	}
+
+	createBeatmapScoreQuery(
+		beatmapsSource: OsuDatabase | BeatmapEntry[],
+		scoresSource: ScoresDatabase | Array<{ beatmapMd5Hash: string | null, scores: ScoreEntry[] }>,
+	) {
+		const query = createBaseBeatmapScoreQuery(beatmapsSource, scoresSource)
+
+		const wrapBeatmap = (beatmap: BeatmapEntry) => ({
+			...beatmap,
+			getOsuFilePath: () => this.getOsuFilePath(beatmap),
+		})
+
+		const wrapScore = (score: ScoreEntry) => ({
+			...score,
+			getOsrFilePath: () => this.getOsrFilePath(score),
+		})
+
+		const wrapBeatmapScoresGroupMatch = ({ beatmap, scores }: { beatmap: BeatmapEntry, scores: ScoreEntry[] }) => ({
+			beatmap: wrapBeatmap(beatmap),
+			scores: scores.map(wrapScore),
+		})
+
+		const wrapBeatmapScoreMatch = ({ beatmap, score }: { beatmap: BeatmapEntry, score: ScoreEntry }) => ({
+			beatmap: wrapBeatmap(beatmap),
+			score: wrapScore(score),
+		})
+
+		function* iterateBeatmapScoreGroups() {
+			for (const match of query.iterateBeatmapScoreGroups()) {
+				yield wrapBeatmapScoresGroupMatch(match)
+			}
+		}
+
+		function* iterateBeatmapScores() {
+			for (const match of query.iterateBeatmapScores()) {
+				yield wrapBeatmapScoreMatch(match)
+			}
+		}
+
+		return {
+			iterateBeatmapScoreGroups,
+			iterateBeatmapScores,
+		}
 	}
 
 	getOsuFilePath(beatmap: BeatmapEntry): string {

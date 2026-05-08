@@ -5,7 +5,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { MINIMUM_SUPPORTED_VERSION } from '../src'
+import { GameplayModes, Grades, MINIMUM_SUPPORTED_VERSION, Mods, RankedStatuses } from '../src'
 import { getConfiguredOsuFolder, OSU_STABLE_DIR_ENV_VAR, OsuFolder } from '../src/node'
 
 const missingConfiguredOsuDirMessage = `Missing ${OSU_STABLE_DIR_ENV_VAR} in .env.`
@@ -82,7 +82,134 @@ async function areFilesEqual(leftPath: string, rightPath: string): Promise<boole
 	}
 }
 
+function createBeatmap() {
+	return {
+		artist: 'artist',
+		artistUnicode: null,
+		title: 'title',
+		titleUnicode: null,
+		creator: 'creator',
+		difficultyName: 'Insane',
+		audioFileName: 'audio.mp3',
+		md5Hash: 'beatmap-md5',
+		osuFileName: 'map.osu',
+		rankedStatus: RankedStatuses.Ranked,
+		hitCircleCount: 1,
+		sliderCount: 2,
+		spinnerCount: 3,
+		lastModificationTime: 1n,
+		approachRate: 9,
+		circleSize: 4,
+		hpDrain: 6,
+		overallDifficulty: 8,
+		sliderVelocity: 1.5,
+		standardStarRatings: [],
+		taikoStarRatings: [],
+		catchStarRatings: [],
+		maniaStarRatings: [],
+		drainTimeSeconds: 95,
+		totalTimeMs: 123456,
+		previewOffsetMs: 65432,
+		timingPoints: [],
+		difficultyId: 11,
+		beatmapId: 22,
+		threadId: 33,
+		standardGrade: Grades.N,
+		taikoGrade: Grades.N,
+		catchGrade: Grades.N,
+		maniaGrade: Grades.N,
+		localOffset: -10,
+		stackLeniency: 0.75,
+		gameplayMode: GameplayModes.Osu,
+		source: 'source',
+		tags: 'tag1 tag2',
+		onlineOffset: 12,
+		titleFont: 'font',
+		isUnplayed: false,
+		lastPlayedAt: 2n,
+		isOsz2: true,
+		beatmapFolderName: 'folder',
+		lastCheckedAgainstRepositoryAt: 3n,
+		ignoreBeatmapSound: false,
+		ignoreBeatmapSkin: true,
+		disableStoryboard: false,
+		disableVideo: false,
+		visualOverride: true,
+		lastModificationTimeUnknown: 0,
+		maniaScrollSpeed: 18,
+	}
+}
+
+function createScore(totalScore: number, replayTimestamp: bigint) {
+	return {
+		gameplayMode: GameplayModes.Osu,
+		version: MINIMUM_SUPPORTED_VERSION,
+		beatmapMd5Hash: 'beatmap-md5',
+		playerName: `player-${totalScore}`,
+		replayMd5Hash: `replay-${totalScore}`,
+		count300: 1,
+		count100: 0,
+		count50: 0,
+		countGeki: 0,
+		countKatu: 0,
+		countMiss: 0,
+		totalScore,
+		maxCombo: totalScore,
+		perfectCombo: true,
+		mods: Mods.None,
+		reservedEmptyString: '',
+		replayTimestamp,
+		reservedInt32: -1,
+		onlineScoreId: BigInt(totalScore),
+	}
+}
+
 describe('node osu folder helper', () => {
+	it('wraps beatmap score query results with bound file path helpers', () => {
+		const folder = new OsuFolder('C:/osu!')
+		const beatmap = createBeatmap()
+		const firstScore = createScore(100, 638804620423450000n)
+		const secondScore = createScore(200, 638804620523450000n)
+		const query = folder.createBeatmapScoreQuery([beatmap], [
+			{
+				beatmapMd5Hash: beatmap.md5Hash,
+				scores: [firstScore, secondScore],
+			},
+		])
+
+		expect([...query.iterateBeatmapScoreGroups()]).toEqual([
+			{
+				beatmap: {
+					...beatmap,
+					getOsuFilePath: expect.any(Function),
+				},
+				scores: [
+					{
+						...firstScore,
+						getOsrFilePath: expect.any(Function),
+					},
+					{
+						...secondScore,
+						getOsrFilePath: expect.any(Function),
+					},
+				],
+			},
+		])
+
+		const [groupMatch] = [...query.iterateBeatmapScoreGroups()]
+		const [firstMatch, secondMatch] = [...query.iterateBeatmapScores()]
+		const osuFilePath = folder.getOsuFilePath(beatmap)
+
+		expect(groupMatch.beatmap.getOsuFilePath()).toBe(osuFilePath)
+		expect(groupMatch.scores.map((score) => score.getOsrFilePath())).toEqual([
+			folder.getOsrFilePath(firstScore),
+			folder.getOsrFilePath(secondScore),
+		])
+		expect(firstMatch.beatmap.getOsuFilePath()).toBe(osuFilePath)
+		expect(firstMatch.score.getOsrFilePath()).toBe(folder.getOsrFilePath(firstScore))
+		expect(secondMatch.score.getOsrFilePath()).toBe(folder.getOsrFilePath(secondScore))
+	})
+
 	it('round-trips configured osu!.db bytes through the node folder helper', async (context) => {
 		const folder = getConfiguredLocalFolder(context)
 		const database = await folder.readOsuDatabase()

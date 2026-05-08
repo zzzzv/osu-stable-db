@@ -69,21 +69,45 @@ const osuFolder = new OsuFolder('C:/osu!')
 const osuDatabase = await osuFolder.readOsuDatabase()
 const scoresDatabase = await osuFolder.readScoresDatabase()
 
-const newestBeatmap = osuDatabase.beatmaps.at(-1)
-const newestScore = scoresDatabase.beatmaps.at(-1)?.scores.at(-1)
+const query = osuFolder.createBeatmapScoreQuery(osuDatabase, scoresDatabase)
 
-if (newestBeatmap !== undefined) {
-  const osuFilePath = osuFolder.getOsuFilePath(newestBeatmap)
-  console.log(osuFilePath)
-}
-
-if (newestScore !== undefined) {
-  const osrFilePath = osuFolder.getOsrFilePath(newestScore)
-  console.log(osrFilePath)
+for (const { beatmap, score } of query.iterateBeatmapScores()) {
+  console.log(beatmap.getOsuFilePath())
+  console.log(score.getOsrFilePath())
 }
 ```
 
 If you only need path-based file IO, the same subpath also exports helpers such as readOsuDatabaseFile, writeCollectionDatabaseFile, and writeScoresDatabaseFile.
+
+## Query Helpers
+
+Use createBeatmapScoreQuery when you want to join osu!.db beatmaps with scores.db entries by beatmap MD5 hash.
+
+It accepts either full database objects or the underlying beatmap and score-group arrays, and returns two generators:
+
+- iterateBeatmapScoreGroups yields one beatmap with its matching ScoreEntry array
+- iterateBeatmapScores yields one beatmap with one flattened ScoreEntry at a time
+
+```ts
+import {
+  createBeatmapScoreQuery,
+  readOsuDatabase,
+  readScoresDatabase,
+} from 'osu-stable-db'
+
+const osuDatabase = readOsuDatabase(osuBytes)
+const scoresDatabase = readScoresDatabase(scoresBytes)
+
+const query = createBeatmapScoreQuery(osuDatabase, scoresDatabase)
+
+for (const { beatmap, scores } of query.iterateBeatmapScoreGroups()) {
+  console.log(beatmap.beatmapId, scores.length)
+}
+
+for (const { beatmap, score } of query.iterateBeatmapScores()) {
+  console.log(beatmap.difficultyName, score.playerName, score.totalScore)
+}
+```
 
 ## Types And Time Values
 
@@ -100,23 +124,13 @@ This project is 100% AI-generated.
 
 Committed minimal fixtures live in [tests/files](tests/files).
 
-To run local node tests and the inspection script against your real osu! installation, set this in [.env](.env):
+To run local node tests against your real osu! installation, set this in [.env](.env):
 
 ```dotenv
 OSU_STABLE_DIR=C:/osu!
 ```
 
 When OSU_STABLE_DIR is set, local node tests read your real database files and verify byte-for-byte round-trip for osu!.db, collection.db, and scores.db.
-
-You can also generate a local inspection report for a specific beatmap identifier with:
-
-```bash
-pnpm run local:inspect -- 5288868
-```
-
-The generated report is written to:
-
-- [tests/files/local/reports](tests/files/local/reports)
 
 ## Development
 

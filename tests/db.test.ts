@@ -8,6 +8,7 @@ import {
 	MINIMUM_SUPPORTED_VERSION,
 	Mods,
 	RankedStatuses,
+	createBeatmapScoreQuery,
 	type BeatmapEntry,
 	type CollectionDatabase,
 	type OsuDatabase,
@@ -260,5 +261,121 @@ describe('database IO', () => {
 
 		expect(() => writeScoresDatabase(database)).toThrow(/additionalModInfo/)
 	})
+
+		it('joins beatmaps with score groups and flattened scores', () => {
+			const beatmap = createBeatmap()
+			const otherBeatmap = {
+				...createBeatmap(),
+				md5Hash: 'other-md5',
+				beatmapId: 23,
+			}
+			const query = createBeatmapScoreQuery(
+				{
+					version: MINIMUM_SUPPORTED_VERSION,
+					folderCount: 0,
+					accountUnlocked: true,
+					accountUnlockDate: 0n,
+					playerName: null,
+					beatmaps: [beatmap, otherBeatmap],
+					userPermissions: 0,
+				},
+				{
+					version: MINIMUM_SUPPORTED_VERSION,
+					beatmaps: [
+						{
+							beatmapMd5Hash: beatmap.md5Hash,
+							scores: [
+								{
+									gameplayMode: GameplayModes.Osu,
+									version: MINIMUM_SUPPORTED_VERSION,
+									beatmapMd5Hash: beatmap.md5Hash,
+									playerName: 'p1',
+									replayMd5Hash: 'r1',
+									count300: 1,
+									count100: 0,
+									count50: 0,
+									countGeki: 0,
+									countKatu: 0,
+									countMiss: 0,
+									totalScore: 100,
+									maxCombo: 1,
+									perfectCombo: true,
+									mods: Mods.None,
+									reservedEmptyString: '',
+									replayTimestamp: 1n,
+									reservedInt32: -1,
+									onlineScoreId: 1n,
+								},
+								{
+									gameplayMode: GameplayModes.Osu,
+									version: MINIMUM_SUPPORTED_VERSION,
+									beatmapMd5Hash: beatmap.md5Hash,
+									playerName: 'p2',
+									replayMd5Hash: 'r2',
+									count300: 2,
+									count100: 0,
+									count50: 0,
+									countGeki: 0,
+									countKatu: 0,
+									countMiss: 0,
+									totalScore: 200,
+									maxCombo: 2,
+									perfectCombo: true,
+									mods: Mods.Hidden,
+									reservedEmptyString: '',
+									replayTimestamp: 2n,
+									reservedInt32: -1,
+									onlineScoreId: 2n,
+								},
+							],
+						},
+						{
+							beatmapMd5Hash: 'missing-md5',
+							scores: [],
+						},
+					],
+				},
+			)
+
+			expect([...query.iterateBeatmapScoreGroups()]).toEqual([
+				{
+					beatmap,
+					scores: [
+						expect.objectContaining({ playerName: 'p1', totalScore: 100 }),
+						expect.objectContaining({ playerName: 'p2', totalScore: 200 }),
+					],
+				},
+			])
+
+			expect([...query.iterateBeatmapScores()]).toEqual([
+				{
+					beatmap,
+					score: expect.objectContaining({ playerName: 'p1', totalScore: 100 }),
+				},
+				{
+					beatmap,
+					score: expect.objectContaining({ playerName: 'p2', totalScore: 200 }),
+				},
+			])
+		})
+
+		it('accepts raw beatmap and score entry arrays', () => {
+			const beatmap = createBeatmap()
+			const query = createBeatmapScoreQuery([beatmap], [
+				{
+					beatmapMd5Hash: beatmap.md5Hash,
+					scores: [],
+				},
+			])
+
+			expect([...query.iterateBeatmapScoreGroups()]).toEqual([
+				{
+					beatmap,
+					scores: [],
+				},
+			])
+		
+			expect([...query.iterateBeatmapScores()]).toEqual([])
+		})
 
 })
