@@ -1,7 +1,7 @@
 {
   "name": "osu-stable-db",
   "type": "module",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "TypeScript reader and writer for osu!stable database files.",
   "author": "zzzzv",
   "license": "MIT",

@@ -16,6 +16,11 @@ import {
 export type DatabaseFilePath = string | URL
 export const OSU_STABLE_DIR_ENV_VAR = 'OSU_STABLE_DIR'
 
+type GeneratorYield<TGeneratorFactory extends (...args: never[]) => Generator> =
+	TGeneratorFactory extends (...args: never[]) => Generator<infer TValue, void, unknown>
+		? TValue
+		: never
+
 export function getConfiguredOsuFolderPath(): string | null {
 	const folderPath = process.env[OSU_STABLE_DIR_ENV_VAR]?.trim()
 	return folderPath === undefined || folderPath.length === 0 ? null : folderPath
@@ -158,3 +163,7 @@ export class OsuFolder {
 		)
 	}
 }
+
+export type BeatmapScoreQuery = ReturnType<OsuFolder['createBeatmapScoreQuery']>
+export type BeatmapScoresGroupMatch = GeneratorYield<BeatmapScoreQuery['iterateBeatmapScoreGroups']>
+export type BeatmapScoreMatch = GeneratorYield<BeatmapScoreQuery['iterateBeatmapScores']>

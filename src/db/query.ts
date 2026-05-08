@@ -1,17 +1,12 @@
-import type { BeatmapEntry, OsuDatabase, ScoreEntry, ScoresBeatmapEntry, ScoresDatabase } from '../types'
-
-export interface BeatmapScoresGroupMatch {
-	beatmap: BeatmapEntry
-	scores: ScoreEntry[]
-}
-
-export interface BeatmapScoreMatch {
-	beatmap: BeatmapEntry
-	score: ScoreEntry
-}
+import type { BeatmapEntry, OsuDatabase, ScoresBeatmapEntry, ScoresDatabase } from '../types'
 
 export type BeatmapQuerySource = OsuDatabase | BeatmapEntry[]
 export type ScoreQuerySource = ScoresDatabase | ScoresBeatmapEntry[]
+
+type GeneratorYield<TGeneratorFactory extends (...args: never[]) => Generator> =
+	TGeneratorFactory extends (...args: never[]) => Generator<infer TValue, void, unknown>
+		? TValue
+		: never
 
 function getBeatmapEntries(source: BeatmapQuerySource): BeatmapEntry[] {
 	return Array.isArray(source) ? source : source.beatmaps
@@ -35,7 +30,7 @@ export function createBeatmapScoreQuery(
 		}
 	}
 
-	function* iterateBeatmapScoreGroups(): Generator<BeatmapScoresGroupMatch> {
+	function* iterateBeatmapScoreGroups() {
 		for (const scoreGroup of scoreGroups) {
 			if (scoreGroup.beatmapMd5Hash === null) {
 				continue
@@ -48,7 +43,7 @@ export function createBeatmapScoreQuery(
 		}
 	}
 
-	function* iterateBeatmapScores(): Generator<BeatmapScoreMatch> {
+	function* iterateBeatmapScores() {
 		for (const { beatmap, scores } of iterateBeatmapScoreGroups()) {
 			for (const score of scores) {
 				yield { beatmap, score }
@@ -61,3 +56,7 @@ export function createBeatmapScoreQuery(
 		iterateBeatmapScores,
 	}
 }
+
+export type BeatmapScoreQuery = ReturnType<typeof createBeatmapScoreQuery>
+export type BeatmapScoresGroupMatch = GeneratorYield<BeatmapScoreQuery['iterateBeatmapScoreGroups']>
+export type BeatmapScoreMatch = GeneratorYield<BeatmapScoreQuery['iterateBeatmapScores']>
